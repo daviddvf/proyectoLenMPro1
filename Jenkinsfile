@@ -1,48 +1,63 @@
 pipeline {
   agent any
-
   environment {
-    // Apunta a la CLI de Compose v2 ya incluida en Docker
-    COMPOSE = "docker compose"
+    TAG = "${env.BUILD_NUMBER}"
+    DOCKER_REGISTRY = "daviddvf/proyectolenmpro"  // Asegúrate de que coincida con tu repositorio en DockerHub
   }
+  options { timeout(time: 30, unit: 'MINUTES') }
 
   stages {
     stage('Checkout') {
       steps {
-        git url: 'https://github.com/daviddvf/proyectoLenMPro1.git',
-            credentialsId: 'git-token',
-            branch: 'main'
+        git(
+          url: 'https://github.com/daviddvf/proyectoLenMPro1.git',
+          credentialsId: 'git-token',
+          branch: 'main'
+        )
+      }
+    }
+
+    stage('Install & Test') {
+      steps {
+        sh 'pip install -r app/requirements.txt'
+        sh 'pytest app --junitxml=results.xml'
+      }
+      post {
+        always {
+          junit 'results.xml'
+        }
+      }
+    }
+
+    stage('Build Docker Image') {
+      steps {
+        sh "docker build -t ${DOCKER_REGISTRY}:${TAG} ./app"
+      }
+    }
+
+    stage('Push to Docker Hub') {
+      steps {
+        withCredentials([usernamePassword(
+          credentialsId: 'docker-token',
+          usernameVariable: 'DOCKER_USER',
+          passwordVariable: 'DOCKER_PASS'
+        )]) {
+          sh 'echo $DOCKER_PASS | docker login --username $DOCKER_USER --password-stdin'
+          sh "docker push ${DOCKER_REGISTRY}:${TAG}"
+        }
       }
     }
 
     stage('Build & Up') {
       steps {
-        // Ahora COMPOSE="docker compose"
-        sh "${COMPOSE} build"
-        sh "${COMPOSE} down --volumes --remove-orphans || true"
-        sh "${COMPOSE} up -d db"
-        sh "${COMPOSE} up -d app"
-      }
-    }
-
-    stage('Migrations & Tests') {
-      steps {
-        sh "${COMPOSE} exec app python manage.py test"
-      }
-    }
-
-    stage('Smoke Test') {
-      steps {
-        sh 'curl -f http://localhost:8000/ || exit 1'
+        sh 'docker-compose build'
+        sh 'docker-compose up -d'
       }
     }
   }
 
   post {
-    always {
-      archiveArtifacts artifacts: '**/app/**/*.py', fingerprint: true
-      // Limpia workspace con deleteDir() que ya está disponible
-      deleteDir()
-    }
+    success { echo '✅ Pipeline OK.' }
+    failure { echo '❌ Pipeline falló.' }
   }
 }
