@@ -21,15 +21,15 @@ services:
       - db_data:/var/lib/mysql
 
   jenkins:
-    image: jenkins/jenkins:lts
-    user: root
+    build: ./jenkins  # Apunta al Dockerfile que creaste para Jenkins
+    user: root        # Le da permisos root para instalar Docker y Docker Compose
     restart: unless-stopped
     ports:
       - "8080:8080"
-      - "50000:50000"
+      - "50000:50000"  # Puerto para agentes de Jenkins
     volumes:
       - jenkins_data:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock   # << NECESARIO para ejecutar Docker desde Jenkins
+      - /var/run/docker.sock:/var/run/docker.sock  # Monta el socket de Docker
     environment:
       JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
 
