@@ -19,6 +19,7 @@ pipeline {
       steps {
         // Ahora COMPOSE="docker compose"
         sh "${COMPOSE} build"
+        sh "${COMPOSE} down --volumes --remove-orphans || true"
         sh "${COMPOSE} up -d db"
         sh "${COMPOSE} up -d app"
       }
