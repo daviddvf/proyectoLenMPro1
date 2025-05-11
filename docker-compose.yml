@@ -9,7 +9,7 @@ services:
     depends_on:
       - db
     entrypoint: >
-      /bin/sh -c "chmod +x /usr/src/app/entrypoint.sh &&/usr/src/app/entrypoint.sh"
+      /bin/sh -c "chmod +x /usr/src/app/entrypoint.sh && /usr/src/app/entrypoint.sh"
 
   db:
     image: mysql:8.0
@@ -22,13 +22,14 @@ services:
 
   jenkins:
     image: jenkins/jenkins:lts
-    user: root                    # para poder instalar plugins vía shell
+    user: root
     restart: unless-stopped
     ports:
       - "8080:8080"
-      - "50000:50000"             # agente remoting
+      - "50000:50000"
     volumes:
       - jenkins_data:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock   # << NECESARIO para ejecutar Docker desde Jenkins
     environment:
       JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
 
