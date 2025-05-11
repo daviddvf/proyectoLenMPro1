@@ -1,5 +1,9 @@
 pipeline {
-  agent any
+  agent {
+    docker {
+      image 'python:3.11-slim'
+    }
+  }
   environment {
     TAG = "${env.BUILD_NUMBER}"
     DOCKER_REGISTRY = "daviddvf/proyectolenmpro"  // Asegúrate de que coincida con tu repositorio en DockerHub
